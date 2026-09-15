@@ -16,6 +16,7 @@ import requests
 import pandas as pd
 
 import config  # carga .env (dotenv) antes de leer el token
+import storage
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "")
 API = f"https://api.telegram.org/bot{TOKEN}"
@@ -27,16 +28,11 @@ shared = {"bot_state": None}
 
 
 def _chat_id() -> str:
-    try:
-        with open(CHAT_FILE) as f:
-            return json.load(f).get("chat_id", "")
-    except Exception:
-        return ""
+    return str(storage.load_json(CHAT_FILE, {}).get("chat_id", ""))
 
 
 def _save_chat_id(cid: str):
-    with open(CHAT_FILE, "w") as f:
-        json.dump({"chat_id": cid}, f)
+    storage.save_json(CHAT_FILE, {"chat_id": cid}, sync=True)
 
 
 def send(text: str, chat_id: str = None):
@@ -75,9 +71,13 @@ def _fmt_status() -> str:
 
 def _fmt_resumen() -> str:
     try:
-        df = pd.read_csv("paper_trades2.csv")
-    except Exception:
-        return "Aun no hay trades registrados."
+        import paper_trader
+        trades = storage.load_json(paper_trader.TRADES_FILE, [])
+        if not trades:
+            return "Aun no hay trades registrados."
+        df = pd.DataFrame(trades)
+    except Exception as e:
+        return f"Error leyendo trades: {e}"
     wins = (df["pnl_usd"] > 0).sum()
     n = len(df)
     return (f"📊 RESUMEN\n"

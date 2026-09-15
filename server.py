@@ -12,6 +12,7 @@ import time
 from flask import Flask, jsonify
 
 from client import get_client
+import storage
 import paper_trader
 import telegram_bot
 
@@ -23,6 +24,7 @@ def bot_loop():
     try:
         client = get_client()
         state = paper_trader.load_state()
+        paper_trader.recover_position_from_market(client, state)
         bot_state["running"] = True
     except Exception as e:
         bot_state["errors"] += 1
@@ -58,8 +60,9 @@ def report():
             out["position"] = json.load(f).get("position")
     except Exception:
         pass
-    if os.path.exists(paper_trader.LOG_FILE):
-        df = pd.read_csv(paper_trader.LOG_FILE)
+    trades = storage.load_json(paper_trader.TRADES_FILE, [])
+    if trades:
+        df = pd.DataFrame(trades)
         wins = int((df["pnl_usd"] > 0).sum())
         out["trades"] = {
             "total": len(df), "wins": wins,

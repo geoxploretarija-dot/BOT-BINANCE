@@ -25,12 +25,14 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import config
+import storage
 from client import get_client
 from strategy2 import generate_signals, ATR_STOP_MULT
 import telegram_bot
 
 STATE_FILE = "paper_state2.json"
-LOG_FILE = "paper_trades2.csv"
+TRADES_FILE = "paper_trades2.json"
+LOG_FILE = "paper_trades2.csv"  # compatibilidad (CSV local)
 CHECK_INTERVAL = 60  # segundos entre chequeos de precio
 MAX_EXPOSURE = 0.25  # 25% del capital maximo por trade
 
@@ -41,22 +43,50 @@ def log(msg: str):
 
 
 def load_state() -> dict:
-    try:
-        with open(STATE_FILE) as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"position": None, "processed_candles": []}
+    state = storage.load_json(STATE_FILE,
+                              {"position": None, "processed_candles": []})
+    return state
 
 
-def save_state(state: dict):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2)
+def save_state(state: dict, sync: bool = False):
+    storage.save_json(STATE_FILE, state, sync=sync)
+
+
+def recover_position_from_market(client, state: dict):
+    """Si hay posicion abierta y el proceso reincicio, recalcula el
+    trailing stop recorriendo las velas desde la entrada (hace que el
+    sistema tolere redespliegues sin perder el estado de riesgo)."""
+    pos = state.get("position")
+    if not pos:
+        return
+    df = get_recent_klines(client, limit=500)
+    entry_ts = pd.Timestamp(pos["entry_time"])
+    after = df[df["open_time"] >= entry_ts]
+    if after.empty:
+        return
+    d = generate_signals(df.copy())
+    atr_series = d["atr"]
+    stop = pos["stop_loss"]
+    highest = pos["highest_close"]
+    for ts, row in after.iterrows():
+        atr = float(atr_series.get(ts, atr_series.iloc[-1]))
+        highest = max(highest, float(row["close"]))
+        stop = max(stop, highest - ATR_STOP_MULT * atr)
+    if stop != pos["stop_loss"] or highest != pos["highest_close"]:
+        pos["stop_loss"] = stop
+        pos["highest_close"] = highest
+        save_state(state, sync=True)
+    log(f"Recuperada posicion: stop trailing recalculado ${pos['stop_loss']:.2f}")
 
 
 def record_trade(row: dict):
+    """Guarda el trade en CSV local y en el JSON sincronizado a GitHub."""
     import os
     df = pd.DataFrame([row])
     df.to_csv(LOG_FILE, mode="a", index=False, header=not os.path.exists(LOG_FILE))
+    trades = storage.load_json(TRADES_FILE, [])
+    trades.append(row)
+    storage.save_json(TRADES_FILE, trades, sync=True)
 
 
 def get_recent_klines(client, limit=250) -> pd.DataFrame:
@@ -109,7 +139,7 @@ def open_position(client, state, price: float, atr: float, candle_time: str):
         "stop_loss": stop_loss,
         "highest_close": fill_price,
     }
-    save_state(state)
+    save_state(state, sync=True)
 
 
 def close_position(client, state, price: float, reason: str):
@@ -137,7 +167,7 @@ def close_position(client, state, price: float, reason: str):
         "exit_reason": reason,
     })
     state["position"] = None
-    save_state(state)
+    save_state(state, sync=True)
 
 
 def cycle(client, state):
@@ -172,7 +202,7 @@ def cycle(client, state):
 
     state["processed_candles"].append(candle_id)
     state["processed_candles"] = state["processed_candles"][-50:]
-    save_state(state)
+    save_state(state, sync=True)
 
 
 def show_status(state):
