@@ -27,6 +27,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 import config
 from client import get_client
 from strategy2 import generate_signals, ATR_STOP_MULT
+import telegram_bot
 
 STATE_FILE = "paper_state2.json"
 LOG_FILE = "paper_trades2.csv"
@@ -97,6 +98,9 @@ def open_position(client, state, price: float, atr: float, candle_time: str):
     fill_price = float(order["fills"][0]["price"]) if order.get("fills") else price
     log(f"COMPRA {quantity} {config.SYMBOL} @ {fill_price:.2f} | "
         f"SL inicial={stop_loss:.2f} (4xATR)")
+    telegram_bot.send(f"🟢 COMPRA {config.SYMBOL}\n"
+                      f"Precio: ${fill_price:.2f}\nCantidad: {quantity}\n"
+                      f"SL inicial: ${stop_loss:.2f} (4xATR)")
 
     state["position"] = {
         "entry_time": str(candle_time),
@@ -118,6 +122,10 @@ def close_position(client, state, price: float, reason: str):
     pnl = (fill_price - pos["entry_price"]) * pos["quantity"]
     log(f"VENTA {quantity} {config.SYMBOL} @ {fill_price:.2f} | "
         f"PnL: ${pnl:+.2f} ({reason})")
+    emoji = "🟢" if pnl > 0 else "🔴"
+    telegram_bot.send(f"{emoji} VENTA {config.SYMBOL} ({reason})\n"
+                      f"Entrada: ${pos['entry_price']:.2f} -> Salida: ${fill_price:.2f}\n"
+                      f"PnL: ${pnl:+.2f}")
 
     record_trade({
         "entry_time": pos["entry_time"],

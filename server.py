@@ -13,6 +13,7 @@ from flask import Flask, jsonify
 
 from client import get_client
 import paper_trader
+import telegram_bot
 
 app = Flask(__name__)
 bot_state = {"last_cycle": None, "errors": 0, "running": False}
@@ -66,5 +67,6 @@ def status():
 if __name__ == "__main__":
     t = threading.Thread(target=bot_loop, daemon=True)
     t.start()
+    telegram_bot.start_background(bot_state)
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

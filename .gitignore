@@ -12,6 +12,7 @@ bot_log.txt
 bot_errors.txt
 paper_state*.json
 paper_trades*.csv
+telegram_chat.json
 equity_curve.csv
 optimization_results.csv
 robust_optimization.csv
