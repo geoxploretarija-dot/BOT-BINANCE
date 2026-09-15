@@ -1,0 +1,33 @@
+name: Monitor Bot Trading (cada 2h)
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # cada 2 horas
+  workflow_dispatch:          # permite ejecutarlo a mano
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar estado del bot y alertar si falla
+        env:
+          BOT_URL: https://bot-binance-fv81.onrender.com/status
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -e
+          RESP=$(curl -sf "$BOT_URL" || echo "CURL_FAIL")
+          if [ "$RESP" = "CURL_FAIL" ]; then
+            MSG="🔴 ALERTA: El bot NO responde (Render caido o endpoint inalcanzable)"
+          else
+            RUNNING=$(echo "$RESP" | jq -r '.running')
+            ERRORS=$(echo "$RESP" | jq -r '.errors')
+            FATAL=$(echo "$RESP" | jq -r '.fatal')
+            if [ "$RUNNING" = "true" ] && [ "$ERRORS" = "0" ]; then
+              echo "Bot OK — sin alerta necesaria"
+              exit 0
+            fi
+            MSG="⚠️ ALERTA BOT: running=$RUNNING errors=$ERRORS fatal=$FATAL ($(echo "$RESP" | jq -r '.last_cycle'))"
+          fi
+          curl -sf "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            -d "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=$MSG"

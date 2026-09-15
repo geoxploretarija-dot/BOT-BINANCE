@@ -46,6 +46,30 @@ def home():
     return "Bot activo", 200
 
 
+@app.get("/report")
+def report():
+    """Resumen detallado para monitoreo programado (GitHub Actions)."""
+    import json
+    import os
+    import pandas as pd
+    out = {"bot": bot_state, "position": None, "trades": None}
+    try:
+        with open(paper_trader.STATE_FILE) as f:
+            out["position"] = json.load(f).get("position")
+    except Exception:
+        pass
+    if os.path.exists(paper_trader.LOG_FILE):
+        df = pd.read_csv(paper_trader.LOG_FILE)
+        wins = int((df["pnl_usd"] > 0).sum())
+        out["trades"] = {
+            "total": len(df), "wins": wins,
+            "win_rate": round(wins / len(df) * 100, 1),
+            "pnl_total": round(float(df["pnl_usd"].sum()), 2),
+            "least_5": df.tail(5).to_dict("records"),
+        }
+    return jsonify(out)
+
+
 @app.get("/status")
 def status():
     import json
@@ -61,6 +85,7 @@ def status():
         "fatal": bot_state.get("fatal"),
         "last_error": bot_state.get("last_error"),
         "open_position": pos,
+        "telegram_chat_id": telegram_bot._chat_id(),
     })
 
 
