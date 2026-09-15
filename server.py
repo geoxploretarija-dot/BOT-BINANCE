@@ -19,9 +19,14 @@ bot_state = {"last_cycle": None, "errors": 0, "running": False}
 
 
 def bot_loop():
-    bot_state["running"] = True
-    client = get_client()
-    state = paper_trader.load_state()
+    try:
+        client = get_client()
+        state = paper_trader.load_state()
+        bot_state["running"] = True
+    except Exception as e:
+        bot_state["errors"] += 1
+        bot_state["fatal"] = str(e)
+        return
     while True:
         try:
             paper_trader.cycle(client, state)
@@ -30,6 +35,7 @@ def bot_loop():
             bot_state["errors"] = 0
         except Exception as e:
             bot_state["errors"] += 1
+            bot_state["last_error"] = f"{type(e).__name__}: {e}"
             print(f"ERROR ciclo: {e}", flush=True)
         time.sleep(paper_trader.CHECK_INTERVAL)
 
@@ -51,6 +57,8 @@ def status():
         "running": bot_state["running"],
         "last_cycle": bot_state["last_cycle"],
         "errors": bot_state["errors"],
+        "fatal": bot_state.get("fatal"),
+        "last_error": bot_state.get("last_error"),
         "open_position": pos,
     })
 
