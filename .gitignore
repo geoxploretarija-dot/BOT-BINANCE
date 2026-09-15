@@ -1,0 +1,19 @@
+# SECRETOS - nunca subir
+.env
+
+# Entorno virtual
+venv/
+__pycache__/
+*.pyc
+
+# Estado local del bot y logs
+bot.pid
+bot_log.txt
+bot_errors.txt
+paper_state*.json
+paper_trades*.csv
+equity_curve.csv
+optimization_results.csv
+robust_optimization.csv
+montecarlo.png
+data_*.csv
