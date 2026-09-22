@@ -12,8 +12,14 @@ reportes en vivo por Telegram.
 |---|---|
 | **Entrada** | Precio > EMA200 (con pendiente positiva) + RSI(6) < 30 (pullback) |
 | **Salida** | Trailing stop a 4×ATR (las ganancias corren) |
-| **Riesgo** | 2% del capital por trade, exposición máxima 25% |
+| **Riesgo** | 2% nominal por trade; efectivo ~0.5% (el sizing limita por exposición máx. 25%) |
 | **Mercado** | BTCUSDT spot, velas de 1h, solo largo |
+
+### Protecciones en vivo (además de la estrategia)
+
+- Máximo 3 trades por día (UTC) y cooldown de 4h tras un stop-loss perdedor
+- No entra con volatilidad extrema (ATR > 1.5% del precio)
+- Alerta por Telegram si hay huecos de velas (caídas/reinicios de Render)
 
 ### Validación estadística realizada
 

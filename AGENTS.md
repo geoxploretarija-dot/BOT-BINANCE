@@ -42,7 +42,8 @@ UptimeRobot: ping cada 5 min (evita sleep del tier free)
 2. `USE_TESTNET=true` por defecto siempre.
 3. Las claves van en `.env` (local) o env vars (Render). NUNCA en código.
 4. El `.env` está en `.gitignore` — verificar antes de cada commit.
-5. Riesgo por trade: 2% | Exposición máxima: 25% | Nunca apalancamiento.
+5. Riesgo por trade: 2% nominal (efectivo ~0.5%: el sizing limita por
+   exposición máx. 25%) | Exposición máxima: 25% | Nunca apalancamiento.
 6. Toda estrategia nueva pasa el protocolo: backtest → optimización
    robusta (alcista+bajista) → Monte Carlo → paper trading 4 semanas.
 

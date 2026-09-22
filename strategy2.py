@@ -1,9 +1,12 @@
 """Estrategia 2: Tendencia + Pullback (mean reversion en tendencia).
 
 Reglas:
-  - Solo largo si precio > EMA200 (tendencia alcista confirmada)
-  - Entrada: RSI(6) < 25 (retroceso/sobreventa dentro de la tendencia)
-  - Salida: RSI(6) > 55 o stop de 2x ATR
+  - Solo largo si precio > EMA200 con pendiente positiva de 10 velas
+  - Entrada: RSI(6) < 30 (retroceso/sobreventa dentro de la tendencia)
+  - Salida: SOLO trailing stop de 4x ATR (las ganancias corren)
+
+La senal -1 (RSI(6) > 55) es informativa; ni el paper trader ni el
+backtest cierran por ella.
 """
 import pandas as pd
 from ta.trend import EMAIndicator

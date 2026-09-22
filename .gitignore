@@ -11,6 +11,7 @@ bot.pid
 bot_log.txt
 bot_errors.txt
 paper_state*.json
+paper_trades*.json
 paper_trades*.csv
 telegram_chat.json
 equity_curve.csv

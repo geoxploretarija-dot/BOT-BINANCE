@@ -1,6 +1,6 @@
 """Backtest de la Estrategia 2 (Tendencia + Pullback) con 3 mejoras:
 
-  1. Trailing stop 2xATR (deja correr ganancias en vez de salir pronto)
+  1. Trailing stop 4xATR (deja correr ganancias en vez de salir pronto)
   2. Exposicion maxima 25% del capital por trade (controla el drawdown)
   3. Filtro: EMA200 con pendiente positiva (en strategy2.generate_signals)
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     print(f"Descargando datos de {config.SYMBOL} ({config.INTERVAL})...")
     df = get_historical_klines(config.SYMBOL, config.INTERVAL, "1 year ago UTC")
     print(f"{len(df)} velas.\n")
-    print("ESTRATEGIA 2: Tendencia(EMA200) + RSI(6)<25 + Stop 2xATR")
+    print("ESTRATEGIA 2: Tendencia(EMA200 pend+) + RSI(6)<30 + Trail 4xATR")
     result = run_backtest(df)
     stats = compute_stats(result)
     print_report(result, stats)
