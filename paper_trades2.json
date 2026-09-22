@@ -1,0 +1,11 @@
+[
+  {
+    "entry_time": "2026-09-20 05:00:00",
+    "exit_time": "2026-09-22T01:03:29.173141+00:00",
+    "entry_price": 80500.01,
+    "exit_price": 85771.44,
+    "quantity": 0.03105,
+    "pnl_usd": 163.6779,
+    "exit_reason": "TRAILING_STOP"
+  }
+]
