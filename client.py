@@ -10,7 +10,11 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 def get_client() -> Client:
     if not config.API_KEY or not config.SECRET_KEY:
         raise ValueError("Faltan credenciales. Completa el archivo .env")
-    client = Client(config.API_KEY, config.SECRET_KEY, testnet=config.USE_TESTNET)
+    # Timeout explicito: una llamada colgada falla a los 15s en vez de
+    # dejar el ciclo trabado indefinidamente (reintenta en 60s)
+    client = Client(config.API_KEY, config.SECRET_KEY,
+                    testnet=config.USE_TESTNET,
+                    requests_params={"timeout": 15})
     return client
 
 
