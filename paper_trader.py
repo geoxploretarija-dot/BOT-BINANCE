@@ -35,6 +35,7 @@ import config
 import storage
 from client import get_client
 from strategy2 import generate_signals, ATR_STOP_MULT
+from binance.exceptions import BinanceAPIException
 import telegram_bot
 
 STATE_FILE = "paper_state2.json"
@@ -165,7 +166,12 @@ def round_step(client, symbol: str, quantity: float) -> float:
     for f in info["filters"]:
         if f["filterType"] == "LOT_SIZE":
             step = float(f["stepSize"])
-            return math.floor(quantity / step) * step
+            qty = math.floor(quantity / step) * step
+            # Redondeo a los decimales del stepSize: evita flotantes con
+            # precision sobrante (Binance -1111 "too much precision")
+            step_str = f["stepSize"].rstrip("0")
+            decimals = len(step_str.split(".")[1]) if "." in step_str else 0
+            return round(qty, decimals)
     return quantity
 
 
@@ -283,9 +289,17 @@ def cycle(client, state):
             log(f"Volatilidad extrema (ATR {entry_atr / entry_price * 100:.2f}%). "
                 "No se abre posicion.")
         else:
-            open_position(client, state, entry_price, entry_atr, candle_id)
-            if state["position"]:
-                state["trades_today"]["count"] = trades_today_count(state) + 1
+            try:
+                open_position(client, state, entry_price, entry_atr, candle_id)
+                if state["position"]:
+                    state["trades_today"]["count"] = trades_today_count(state) + 1
+            except BinanceAPIException as e:
+                # Error determinista de la API (ej. precision -1111):
+                # reintentar toda la hora solo satura la API; se omite la vela
+                log(f"ERROR API abriendo posicion (vela omitida): {e}")
+            except Exception as e:
+                log(f"ERROR abriendo posicion (se reintenta): {e}")
+                return
 
     state["processed_candles"].append(candle_id)
     state["processed_candles"] = state["processed_candles"][-50:]
