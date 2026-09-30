@@ -25,5 +25,14 @@
     "quantity": 0.02998,
     "pnl_usd": -3.3242,
     "exit_reason": "STOP_LOSS"
+  },
+  {
+    "entry_time": "2026-09-28 04:00:00",
+    "exit_time": "2026-09-30T07:20:18.960946+00:00",
+    "entry_price": 83534.01,
+    "exit_price": 67618.76,
+    "quantity": 0.03023,
+    "pnl_usd": -481.118,
+    "exit_reason": "STOP_LOSS"
   }
 ]
